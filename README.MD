@@ -1,48 +1,23 @@
-# visor-sesiones
+# Visor de sesiones COCODIS
 
-<div align="center" style="margin: 30px;">
-    <a href="https://refine.dev">
-    <img alt="refine logo" src="https://refine.ams3.cdn.digitaloceanspaces.com/readme/refine-readme-banner.png">
-    </a>
-</div>
-<br/>
+Aplicación de consulta para eventos almacenados en `public.eventos`. Usa React, Ant Design, Supabase Auth y navegación con hash (`/#/ruta`).
 
-This [Refine](https://github.com/refinedev/refine) project was generated with [create refine-app](https://github.com/refinedev/refine/tree/master/packages/create-refine-app).
+## Desarrollo
 
-## Getting Started
-
-A React Framework for building internal tools, admin panels, dashboards & B2B apps with unmatched flexibility ✨
-
-Refine's hooks and components simplifies the development process and eliminates the repetitive tasks by providing industry-standard solutions for crucial aspects of a project, including authentication, access control, routing, networking, state management, and i18n.
-
-## Available Scripts
-
-### Running the development server.
+Requiere Node.js y las variables locales `VITE_API_URL` y `VITE_SUPABASE_API_KEY` en `.env`.
 
 ```bash
-    npm run dev
+npm install
+npm run dev
+npm run build
 ```
 
-### Building for production.
+## Supabase
 
-```bash
-    npm run build
-```
+La tabla `eventos` debe conservar las columnas finales documentadas en `src/supabase_config/migracion_tabla.sql`. Ejecuta también `supabase/migrations/20260929000100_eventos_read_access.sql` después de crear la tabla: concede `SELECT` solo a usuarios autenticados mediante RLS y deniega escrituras desde el visor.
 
-### Running the production server.
+Ejecuta `supabase/migrations/20260929000000_perfiles_usuarios.sql` en el SQL Editor del proyecto. Crea `perfiles_usuarios`, asigna el rol inicial `viewer`, activa el perfil de cuentas nuevas con cambio de contraseña obligatorio y añade el RPC que completa ese cambio. Las cuentas existentes se agregan como perfiles sin cambio obligatorio; para una cuenta existente con contraseña temporal, marca `requiere_cambio_contrasena = TRUE` desde el SQL Editor.
 
-```bash
-    npm run start
-```
+Para dar de alta a alguien, crea el usuario desde Supabase Auth con contraseña temporal. Al iniciar sesión por primera vez, el visor obliga a definir una contraseña propia. La recuperación por correo vuelve a `/#/actualizar-contrasena`; agrega la URL del sitio y su ruta hash a las Redirect URLs permitidas en la configuración de Auth de Supabase.
 
-## Learn More
-
-To learn more about **Refine**, please check out the [Documentation](https://refine.dev/docs)
-
-- **Supabase Data Provider** [Docs](https://refine.dev/docs/core/providers/data-provider/#overview)
-- **Ant Design** [Docs](https://refine.dev/docs/ui-frameworks/antd/tutorial/)
-- **React Router** [Docs](https://refine.dev/docs/core/providers/router-provider/)
-
-## License
-
-MIT
+El rol se conserva como texto extensible (`administrador_sitio`, `admin_sector`, `viewer` u otros futuros). Por ahora no hay autorización diferenciada por rol porque la aplicación solo consulta y presenta eventos.

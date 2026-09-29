@@ -1,69 +1,31 @@
-import {
-  Refine,
-  GitHubBanner,
-  WelcomePage,
-  Authenticated,
-} from "@refinedev/core";
-import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
-import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
-
-import {
-  AuthPage,
-  ErrorComponent,
-  useNotificationProvider,
-  ThemedLayout,
-  ThemedSider,
-} from "@refinedev/antd";
-import "@refinedev/antd/dist/reset.css";
-
-import { liveProvider } from "@refinedev/supabase";
-import { App as AntdApp } from "antd";
-import { BrowserRouter, Route, Routes, Outlet } from "react-router";
-import routerProvider, {
-  NavigateToResource,
-  CatchAllNavigate,
-  UnsavedChangesNotifier,
-  DocumentTitleHandler,
-} from "@refinedev/react-router";
-import { supabaseClient } from "./providers/supabase-client";
-import { dataProvider } from "./providers/data";
-import { ColorModeContextProvider } from "./contexts/color-mode";
-import { Header } from "./components/header";
-import authProvider from "./providers/auth";
+import { App as AntdApp, ConfigProvider } from "antd";
+import esES from "antd/locale/es_ES";
+import { HashRouter } from "react-router";
+import { AppRoutes } from "./routes";
+import "./styles/app.css";
 
 function App() {
   return (
-    <BrowserRouter>
-      <GitHubBanner />
-      <RefineKbarProvider>
-        <ColorModeContextProvider>
-          <AntdApp>
-            <DevtoolsProvider>
-              <Refine
-                dataProvider={dataProvider}
-                liveProvider={liveProvider(supabaseClient)}
-                authProvider={authProvider}
-                routerProvider={routerProvider}
-                notificationProvider={useNotificationProvider}
-                options={{
-                  syncWithLocation: true,
-                  warnWhenUnsavedChanges: true,
-                  projectId: "PyZAmp-3nuEQ4-cVIaMw",
-                }}
-              >
-                <Routes>
-                  <Route index element={<WelcomePage />} />
-                </Routes>
-                <RefineKbar />
-                <UnsavedChangesNotifier />
-                <DocumentTitleHandler />
-              </Refine>
-              <DevtoolsPanel />
-            </DevtoolsProvider>
-          </AntdApp>
-        </ColorModeContextProvider>
-      </RefineKbarProvider>
-    </BrowserRouter>
+    <ConfigProvider
+      locale={esES}
+      theme={{
+        token: {
+          colorPrimary: "#9b2247",
+          colorSuccess: "#1e5b4f",
+          colorWarning: "#a57f2c",
+          colorText: "#161a1d",
+          colorBorder: "#d8d8d5",
+          borderRadius: 4,
+          fontFamily: '"Aptos", "Segoe UI", sans-serif',
+        },
+      }}
+    >
+      <AntdApp>
+        <HashRouter>
+          <AppRoutes />
+        </HashRouter>
+      </AntdApp>
+    </ConfigProvider>
   );
 }
 
