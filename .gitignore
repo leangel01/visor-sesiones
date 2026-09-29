@@ -14,6 +14,7 @@ dist-ssr
 *.local
 
 supabase_config
+supabase
 
 # Environment variables
 .env
