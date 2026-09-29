@@ -14,9 +14,9 @@ npm run build
 
 ## Supabase
 
-La tabla `eventos` debe conservar las columnas finales documentadas en `src/supabase_config/migracion_tabla.sql`. Ejecuta también `supabase/migrations/20260929000100_eventos_read_access.sql` después de crear la tabla: concede `SELECT` solo a usuarios autenticados mediante RLS y deniega escrituras desde el visor.
+El proyecto requiere las tablas `public.eventos` y `public.perfiles_usuarios` en Supabase. `eventos` debe permitir únicamente lectura a usuarios autenticados mediante RLS; el visor no realiza escrituras. Este repositorio no contiene migraciones SQL.
 
-Ejecuta `supabase/migrations/20260929000000_perfiles_usuarios.sql` en el SQL Editor del proyecto. Crea `perfiles_usuarios`, asigna el rol inicial `viewer`, activa el perfil de cuentas nuevas con cambio de contraseña obligatorio y añade el RPC que completa ese cambio. Las cuentas existentes se agregan como perfiles sin cambio obligatorio; para una cuenta existente con contraseña temporal, marca `requiere_cambio_contrasena = TRUE` desde el SQL Editor.
+Los perfiles de usuario requieren `id`, `nombre`, `rol` y `requiere_cambio_contrasena`, con acceso de lectura del perfil propio. La función `complete_password_setup` permite quitar el requisito de cambio inicial de contraseña.
 
 Para dar de alta a alguien, crea el usuario desde Supabase Auth con contraseña temporal. Al iniciar sesión por primera vez, el visor obliga a definir una contraseña propia. La recuperación por correo vuelve a `/#/actualizar-contrasena`; agrega la URL del sitio y su ruta hash a las Redirect URLs permitidas en la configuración de Auth de Supabase.
 

@@ -25,14 +25,9 @@ type Evento = {
 };
 
 type DateMode = "day" | "range";
-type Facets = {
-  tipo_sesion: string | null;
-  responsable: string | null;
-  sector: string | null;
-  institucion: string | null;
-};
+type FacetField = "tipo_sesion" | "responsable" | "sector" | "institucion";
+type Facets = Record<FacetField, string[]>;
 const UNASSIGNED = "__sin_asignar__";
-type FacetField = keyof Facets;
 
 function facetValue(event: Evento, field: FacetField) {
   return event[field]?.trim() || UNASSIGNED;
@@ -129,10 +124,10 @@ export function DashboardPage() {
   const [dateStart, setDateStart] = useState(monthStart());
   const [dateEnd, setDateEnd] = useState(dateInputValue(new Date()));
   const [facets, setFacets] = useState<Facets>({
-    tipo_sesion: null,
-    responsable: null,
-    sector: null,
-    institucion: null,
+    tipo_sesion: [],
+    responsable: [],
+    sector: [],
+    institucion: [],
   });
   const [search, setSearch] = useState("");
   const [signingOut, setSigningOut] = useState(false);
@@ -207,8 +202,8 @@ export function DashboardPage() {
             (Object.keys(facets) as FacetField[]).every(
               (key) =>
                 key === field ||
-                !facets[key] ||
-                facetValue(event, key) === facets[key],
+                facets[key].length === 0 ||
+                facets[key].includes(facetValue(event, key)),
             ),
           )
           .map((event) => facetValue(event, field)),
@@ -220,28 +215,33 @@ export function DashboardPage() {
   useEffect(() => {
     setFacets((current) => {
       const next = { ...current };
+      let changed = false;
       (Object.keys(current) as FacetField[]).forEach((field) => {
-        if (
-          next[field] &&
-          !availableOptions(field).includes(next[field] as string)
-        )
-          next[field] = null;
+        const validOptions = availableOptions(field);
+        const validSelections = next[field].filter((value) =>
+          validOptions.includes(value),
+        );
+        if (validSelections.length !== next[field].length) {
+          next[field] = validSelections;
+          changed = true;
+        }
       });
-      return next;
+      return changed ? next : current;
     });
-  }, [dateFiltered]);
+  }, [dateFiltered, facets]);
 
   const filteredEvents = useMemo(
     () =>
       dateFiltered.filter(
         (event) =>
-          (!facets.tipo_sesion ||
-            facetValue(event, "tipo_sesion") === facets.tipo_sesion) &&
-          (!facets.responsable ||
-            facetValue(event, "responsable") === facets.responsable) &&
-          (!facets.sector || facetValue(event, "sector") === facets.sector) &&
-          (!facets.institucion ||
-            facetValue(event, "institucion") === facets.institucion) &&
+          (facets.tipo_sesion.length === 0 ||
+            facets.tipo_sesion.includes(facetValue(event, "tipo_sesion"))) &&
+          (facets.responsable.length === 0 ||
+            facets.responsable.includes(facetValue(event, "responsable"))) &&
+          (facets.sector.length === 0 ||
+            facets.sector.includes(facetValue(event, "sector"))) &&
+          (facets.institucion.length === 0 ||
+            facets.institucion.includes(facetValue(event, "institucion"))) &&
           (!search ||
             [
               event.title,
@@ -385,10 +385,10 @@ export function DashboardPage() {
                 setDateEnd(dateInputValue(new Date()));
                 setDay(dateInputValue(new Date()));
                 setFacets({
-                  tipo_sesion: null,
-                  responsable: null,
-                  sector: null,
-                  institucion: null,
+                  tipo_sesion: [],
+                  responsable: [],
+                  sector: [],
+                  institucion: [],
                 });
                 setSearch("");
               }}
@@ -451,19 +451,21 @@ export function DashboardPage() {
               <div className="filter-field" key={field}>
                 <label>{label}</label>
                 <Select
+                  mode="multiple"
                   allowClear
                   showSearch
+                  maxTagCount="responsive"
                   optionFilterProp="label"
                   placeholder="Todos"
-                  value={facets[field] ?? undefined}
+                  value={facets[field]}
                   options={availableOptions(field).map((value) => ({
                     value,
                     label: facetLabel(value),
                   }))}
-                  onChange={(value) =>
+                  onChange={(values: string[]) =>
                     setFacets((current) => ({
                       ...current,
-                      [field]: value ?? null,
+                      [field]: values,
                     }))
                   }
                 />
