@@ -4,6 +4,7 @@ import { Spin } from "antd";
 import { AuthPage } from "../modules/auth/AuthPage";
 import { DashboardPage } from "../modules/dashboard/DashboardPage";
 import {
+  getPasswordRecoveryAccessToken,
   hasExpiredPasswordRecoveryError,
   PASSWORD_RECOVERY_EXPIRED_KEY,
   PASSWORD_RECOVERY_USER_KEY,
@@ -33,17 +34,64 @@ function RecoveryRedirect() {
 
 function UnknownRouteRedirect() {
   const navigate = useNavigate();
+  const [state, setState] = useState<"checking" | "invalid" | "error">("checking");
 
   useEffect(() => {
+    let active = true;
+
     if (hasExpiredPasswordRecoveryError()) {
       sessionStorage.setItem(PASSWORD_RECOVERY_EXPIRED_KEY, "true");
       navigate("/actualizar-contrasena", { replace: true });
-      return;
+      return () => {
+        active = false;
+      };
     }
-    navigate("/", { replace: true });
+
+    const recoveryAccessToken = getPasswordRecoveryAccessToken();
+    if (!recoveryAccessToken) {
+      navigate("/", { replace: true });
+      return () => {
+        active = false;
+      };
+    }
+
+    const validateRecoverySession = async () => {
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      if (!active) return;
+      if (error) {
+        setState("error");
+        return;
+      }
+      if (!session || session.access_token !== recoveryAccessToken) {
+        setState("invalid");
+        return;
+      }
+
+      sessionStorage.setItem(PASSWORD_RECOVERY_USER_KEY, session.user.id);
+      navigate("/actualizar-contrasena", { replace: true });
+    };
+
+    void validateRecoverySession().catch(() => {
+      if (active) setState("error");
+    });
+
+    return () => {
+      active = false;
+    };
   }, [navigate]);
 
-  return null;
+  if (state === "error") {
+    return (
+      <main className="route-error">
+        <h1>No se pudo verificar el enlace</h1>
+        <p>Ocurrió un error al validar el enlace de recuperación. Intenta abrirlo nuevamente.</p>
+        <a href="#/recuperar-contrasena">Solicitar un nuevo enlace</a>
+      </main>
+    );
+  }
+  if (state === "invalid") return <Navigate to="/ingresar" replace />;
+
+  return <main className="route-loading"><Spin size="large" /><p className="route-loading-label">Validando enlace de recuperación</p></main>;
 }
 
 function DashboardRoute() {
