@@ -18,6 +18,6 @@ El proyecto requiere las tablas `public.eventos` y `public.perfiles_usuarios` en
 
 Los perfiles de usuario requieren `id`, `nombre`, `rol` y `requiere_cambio_contrasena`, con acceso de lectura del perfil propio. La función `complete_password_setup` permite quitar el requisito de cambio inicial de contraseña.
 
-Para dar de alta a alguien, crea el usuario desde Supabase Auth con contraseña temporal. Al iniciar sesión por primera vez, el visor obliga a definir una contraseña propia. La recuperación por correo vuelve a `/#/actualizar-contrasena`; agrega la URL del sitio y su ruta hash a las Redirect URLs permitidas en la configuración de Auth de Supabase.
+Para dar de alta a alguien, crea el usuario desde Supabase Auth con contraseña temporal. Al iniciar sesión por primera vez, el visor obliga a definir una contraseña propia. La recuperación por correo vuelve a `https://leangel01.github.io/visor-sesiones/#/actualizar-contrasena`. En Supabase Auth, configura la URL del sitio como `https://leangel01.github.io/visor-sesiones/` y permite esa URL completa, incluida la ruta hash, en Redirect URLs.
 
 El rol se conserva como texto extensible (`administrador_sitio`, `admin_sector`, `viewer` u otros futuros). Por ahora no hay autorización diferenciada por rol porque la aplicación solo consulta y presenta eventos.

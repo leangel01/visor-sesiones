@@ -1,4 +1,5 @@
 import { AuthProvider } from "@refinedev/core";
+import { getPasswordRecoveryRedirectUrl } from "./constants";
 import { supabaseClient } from "./supabase-client";
 
 const authProvider: AuthProvider = {
@@ -99,7 +100,7 @@ const authProvider: AuthProvider = {
       const { data, error } = await supabaseClient.auth.resetPasswordForEmail(
         email,
         {
-          redirectTo: `${window.location.origin}/update-password`,
+          redirectTo: getPasswordRecoveryRedirectUrl(),
         }
       );
 

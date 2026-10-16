@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Alert, Button, Form, Input, message } from "antd";
 import { ArrowLeftOutlined, LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
+import { getPasswordRecoveryRedirectUrl } from "../../providers/constants";
 import { supabaseClient } from "../../providers/supabase-client";
 
 type AuthMode = "login" | "recovery" | "update";
@@ -52,7 +53,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
 
       if (mode === "recovery") {
         const { error } = await supabaseClient.auth.resetPasswordForEmail(values.email, {
-          redirectTo: `${window.location.origin}/#/actualizar-contrasena`,
+          redirectTo: getPasswordRecoveryRedirectUrl(),
         });
         if (error) throw error;
         setSent(true);
@@ -77,7 +78,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   };
 
   return (
-    <main className="auth-shell">
+    <main className={`auth-shell${mode === "update" ? " auth-shell--update" : ""}`}>
       <aside className="auth-aside">
         <div className="auth-aside-copy">
           <p>SABG<span>/</span> DGPCMC 2</p>
@@ -92,6 +93,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
           {mode !== "login" && <Link className="auth-back" to="/ingresar"><ArrowLeftOutlined /> Regresar al acceso</Link>}
           <div className="auth-user-icon" aria-hidden="true">{mode === "login" ? <UserOutlined /> : <LockOutlined />}</div>
           <div className="auth-title-rule"><span>{heading}</span></div>
+          {mode === "update" && <p className="auth-update-note">Elige una contraseña segura para tu cuenta.</p>}
           {mode === "recovery" && sent ? (
             <div className="auth-success" role="status">Si el correo está registrado, recibirás un enlace para continuar.</div>
           ) : (

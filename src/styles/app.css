@@ -53,6 +53,11 @@ a { color: inherit; }
 }
 
 .auth-shell { min-height: 100vh; display: grid; grid-template-columns: minmax(310px, 0.82fr) minmax(460px, 1.18fr); background: #fbfbf8; }
+.auth-shell--update .auth-main { background: #f1f5f2; }
+.auth-shell--update .auth-form-wrap { max-width: 470px; padding: clamp(24px, 4vw, 38px); background: #fff; border: 1px solid #dbe5df; border-top: 4px solid var(--green); border-radius: 8px; box-shadow: 0 18px 50px rgb(0 47 42 / 8%); }
+.auth-shell--update .auth-user-icon { border-color: #d6e7dd; background: var(--green); }
+.auth-shell--update .auth-title-rule { color: var(--forest); }
+.auth-update-note { margin: -16px 0 26px; color: #5f6562; font-size: 13px; line-height: 1.6; text-align: center; }
 .auth-aside { min-height: 100vh; padding: 42px clamp(28px, 6vw, 88px); background: var(--forest); color: white; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
 .auth-aside::after { content: ""; position: absolute; width: 410px; height: 410px; border: 1px solid rgb(230 209 148 / 24%); border-radius: 50%; right: -220px; top: 24%; box-shadow: 0 0 0 34px rgb(230 209 148 / 5%), 0 0 0 68px rgb(230 209 148 / 4%); }
 .auth-mark, .brand-mark { font: 700 28px "Libre Baskerville", Georgia, serif; letter-spacing: 0; }
