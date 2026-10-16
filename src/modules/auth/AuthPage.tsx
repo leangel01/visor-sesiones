@@ -1,18 +1,29 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { Alert, Button, Form, Input, message } from "antd";
+import { Link, Navigate, useNavigate } from "react-router";
+import { Alert, Button, Form, Input, message, Spin } from "antd";
 import { ArrowLeftOutlined, LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
-import { getPasswordRecoveryRedirectUrl } from "../../providers/constants";
+import {
+  getPasswordRecoveryRedirectUrl,
+  hasExpiredPasswordRecoveryError,
+  PASSWORD_RECOVERY_EXPIRED_KEY,
+  PASSWORD_RECOVERY_USER_KEY,
+} from "../../providers/constants";
 import { supabaseClient } from "../../providers/supabase-client";
 
 type AuthMode = "login" | "recovery" | "update";
 type AuthValues = { email: string; password: string; confirmPassword: string };
+type UpdateAccessState =
+  | { status: "loading" | "allowed" | "unauthenticated" | "forbidden" | "expired" }
+  | { status: "error"; message: string };
 
 export function AuthPage({ mode }: { mode: AuthMode }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [updateAccess, setUpdateAccess] = useState<UpdateAccessState>({
+    status: mode === "update" ? "loading" : "allowed",
+  });
   const [form] = Form.useForm<AuthValues>();
   const heading = mode === "login" ? "LOGIN" : mode === "recovery" ? "RECUPERAR ACCESO" : "NUEVA CONTRASEÑA";
 
@@ -22,6 +33,84 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     setLoginError(null);
     form.resetFields();
   }, [mode, form]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (mode !== "update") {
+      setUpdateAccess({ status: "allowed" });
+      return () => {
+        active = false;
+      };
+    }
+
+    setUpdateAccess({ status: "loading" });
+    const validateUpdateAccess = async () => {
+      if (
+        sessionStorage.getItem(PASSWORD_RECOVERY_EXPIRED_KEY) === "true"
+        || hasExpiredPasswordRecoveryError()
+      ) {
+        sessionStorage.removeItem(PASSWORD_RECOVERY_EXPIRED_KEY);
+        sessionStorage.removeItem(PASSWORD_RECOVERY_USER_KEY);
+        setUpdateAccess({ status: "expired" });
+        navigate("/actualizar-contrasena", { replace: true });
+        return;
+      }
+
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      if (!active) return;
+      if (error) {
+        setUpdateAccess({
+          status: "error",
+          message: `No fue posible verificar la sesión: ${error.message}`,
+        });
+        return;
+      }
+      if (!session) {
+        setUpdateAccess({ status: "unauthenticated" });
+        return;
+      }
+      if (sessionStorage.getItem(PASSWORD_RECOVERY_USER_KEY) === session.user.id) {
+        setUpdateAccess({ status: "allowed" });
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabaseClient
+        .from("perfiles_usuarios")
+        .select("requiere_cambio_contrasena")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (!active) return;
+      if (profileError) {
+        setUpdateAccess({
+          status: "error",
+          message: `No fue posible verificar el perfil: ${profileError.message}`,
+        });
+      } else if (!profile) {
+        setUpdateAccess({
+          status: "error",
+          message: "El usuario no tiene un perfil asignado.",
+        });
+      } else {
+        setUpdateAccess({
+          status: profile.requiere_cambio_contrasena ? "allowed" : "forbidden",
+        });
+      }
+    };
+
+    void validateUpdateAccess().catch((error: unknown) => {
+      if (!active) return;
+      setUpdateAccess({
+        status: "error",
+        message: error instanceof Error ? error.message : "Ocurrió un error inesperado.",
+      });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [mode, navigate]);
 
   const submit = async (values: AuthValues) => {
     setBusy(true);
@@ -64,6 +153,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       if (error) throw error;
       const { error: profileError } = await supabaseClient.rpc("complete_password_setup");
       if (profileError) throw profileError;
+      sessionStorage.removeItem(PASSWORD_RECOVERY_USER_KEY);
       message.success("Contraseña actualizada.");
       navigate("/", { replace: true });
     } catch (error) {
@@ -76,6 +166,23 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       setBusy(false);
     }
   };
+
+  if (mode === "update") {
+    if (updateAccess.status === "loading") {
+      return <main className="route-loading"><Spin size="large" /><p className="route-loading-label">Verificando el acceso</p></main>;
+    }
+    if (updateAccess.status === "unauthenticated") return <Navigate to="/ingresar" replace />;
+    if (updateAccess.status === "forbidden") return <Navigate to="/" replace />;
+    if (updateAccess.status === "error") {
+      return (
+        <main className="route-error">
+          <h1>No se pudo verificar el acceso</h1>
+          <p>{updateAccess.message}</p>
+          <Link to="/ingresar">Volver al inicio de sesión</Link>
+        </main>
+      );
+    }
+  }
 
   return (
     <main className={`auth-shell${mode === "update" ? " auth-shell--update" : ""}`}>
@@ -92,9 +199,22 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
         <div className="auth-form-wrap">
           {mode !== "login" && <Link className="auth-back" to="/ingresar"><ArrowLeftOutlined /> Regresar al acceso</Link>}
           <div className="auth-user-icon" aria-hidden="true">{mode === "login" ? <UserOutlined /> : <LockOutlined />}</div>
-          <div className="auth-title-rule"><span>{heading}</span></div>
-          {mode === "update" && <p className="auth-update-note">Elige una contraseña segura para tu cuenta.</p>}
-          {mode === "recovery" && sent ? (
+          <div className="auth-title-rule"><span>{mode === "update" && updateAccess.status === "expired" ? "ENLACE EXPIRADO" : heading}</span></div>
+          {mode === "update" && updateAccess.status === "allowed" && <p className="auth-update-note">Elige una contraseña segura para tu cuenta.</p>}
+          {mode === "update" && updateAccess.status === "expired" ? (
+            <>
+              <Alert
+                className="auth-expired-alert"
+                type="warning"
+                showIcon
+                message="El enlace de recuperación venció o ya no es válido."
+                description="Solicita un nuevo enlace de recuperación para recuperar tu contraseña."
+              />
+              <Button type="primary" size="large" block onClick={() => navigate("/recuperar-contrasena")}>
+                Solicitar un nuevo enlace de recuperación
+              </Button>
+            </>
+          ) : mode === "recovery" && sent ? (
             <div className="auth-success" role="status">Si el correo está registrado, recibirás un enlace para continuar.</div>
           ) : (
             <>

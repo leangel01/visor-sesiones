@@ -82,6 +82,8 @@ a { color: inherit; }
 .auth-form-wrap .ant-input-affix-wrapper { min-height: 46px; }
 .auth-submit { margin-top: 10px; min-height: 46px; font-weight: 600; }
 .auth-login-error { margin: 0 0 20px; }
+.auth-expired-alert { margin-bottom: 20px; }
+.auth-expired-alert .ant-alert-message { font-weight: 600; }
 .forgot-link { display: block; margin-top: 21px; color: var(--berry); font-weight: 600; font-size: 13px; text-align: center; }
 .auth-footnote, .auth-success { color: #5f6562; font-size: 13px; line-height: 1.6; margin-top: 18px; }
 .auth-success { padding: 14px 16px; border-left: 3px solid var(--green); background: #e8f0ed; }
